@@ -6,7 +6,7 @@ runStudy <- function(connectionDetails = NULL,
                      cohortDatabaseSchema,
                      cohortStagingTable = "cohort_stg",
                      cohortTable = "cohort",
-                     cohortOutcomeTable = "cohort_out",
+                     featureSummaryTable = "cohort_smry",
                      cohortIds = NULL,
                      cohortGroups = getUserSelectableCohortGroups(),
                      exportFolder,
@@ -23,6 +23,13 @@ runStudy <- function(connectionDetails = NULL,
     dir.create(exportFolder, recursive = TRUE)
   }
   
+  ParallelLogger::addDefaultFileLogger(file.path(exportFolder, "covid19characterization.txt"))
+  on.exit(ParallelLogger::unregisterLogger("DEFAULT"))
+  
+  if (as.logical(Sys.getenv("USE_SUBSET")) == TRUE) {
+    warning("Running in subset mode for testing")
+  }
+  
   if (incremental) {
     if (is.null(incrementalFolder)) {
       stop("Must specify incrementalFolder when incremental = TRUE")
@@ -36,8 +43,7 @@ runStudy <- function(connectionDetails = NULL,
     warning("fftempdir '", getOption("fftempdir"), "' not found. Attempting to create folder")
     dir.create(getOption("fftempdir"), recursive = TRUE)
   }
-  
-  
+
   if (is.null(connection)) {
     connection <- DatabaseConnector::connect(connectionDetails)
     on.exit(DatabaseConnector::disconnect(connection))
@@ -47,7 +53,7 @@ runStudy <- function(connectionDetails = NULL,
   cohorts <- getCohortsToCreate()
   targetCohortIds <- cohorts[cohorts$cohortType %in% cohortGroups$cohortGroup, "cohortId"][[1]]
   strataCohortIds <- cohorts[cohorts$cohortType == "strata", "cohortId"][[1]]
-  outcomeCohortIds <- cohorts[cohorts$cohortType == "outcome", "cohortId"][[1]]
+  featureCohortIds <- cohorts[cohorts$cohortType == "feature", "cohortId"][[1]]
   
   # Start with the target cohorts
   ParallelLogger::logInfo("**********************************************************")
@@ -69,7 +75,7 @@ runStudy <- function(connectionDetails = NULL,
 
   # Next do the strata cohorts
   ParallelLogger::logInfo("******************************************")
-  ParallelLogger::logInfo("Creating strata cohorts")
+  ParallelLogger::logInfo("  ---- Creating strata cohorts  ---- ")
   ParallelLogger::logInfo("******************************************")
   instantiateCohortSet(connectionDetails = connectionDetails,
                        connection = connection,
@@ -85,9 +91,9 @@ runStudy <- function(connectionDetails = NULL,
                        incrementalFolder = incrementalFolder,
                        inclusionStatisticsFolder = exportFolder)
 
-  # Create the outcome cohorts
+  # Create the feature cohorts
   ParallelLogger::logInfo("**********************************************************")
-  ParallelLogger::logInfo(" ---- Creating outcome cohorts ---- ")
+  ParallelLogger::logInfo(" ---- Creating feature cohorts ---- ")
   ParallelLogger::logInfo("**********************************************************")
   instantiateCohortSet(connectionDetails = connectionDetails,
                        connection = connection,
@@ -95,7 +101,7 @@ runStudy <- function(connectionDetails = NULL,
                        oracleTempSchema = oracleTempSchema,
                        cohortDatabaseSchema = cohortDatabaseSchema,
                        cohortTable = cohortStagingTable,
-                       cohortIds = outcomeCohortIds,
+                       cohortIds = featureCohortIds,
                        minCellCount = minCellCount,
                        createCohortTable = FALSE,
                        generateInclusionStats = FALSE,
@@ -130,16 +136,15 @@ runStudy <- function(connectionDetails = NULL,
                        incremental = incremental,
                        incrementalFolder = incrementalFolder)
   
-  # Compute the outcomes
+  # Compute the features
   ParallelLogger::logInfo("**********************************************************")
-  ParallelLogger::logInfo(" ---- Create outcome proportions ---- ")
+  ParallelLogger::logInfo(" ---- Create feature proportions ---- ")
   ParallelLogger::logInfo("**********************************************************")
-  createOutcomeProportions(connection = connection,
+  createFeatureProportions(connection = connection,
                            cohortDatabaseSchema = cohortDatabaseSchema,
                            cohortStagingTable = cohortStagingTable,
                            cohortTable = cohortTable,
-                           cohortOutcomeTable = cohortOutcomeTable,
-                           targetIds = targetCohortIds,
+                           featureSummaryTable = featureSummaryTable,
                            oracleTempSchema = oracleTempSchema,
                            incremental = incremental,
                            incrementalFolder = incrementalFolder)
@@ -203,17 +208,23 @@ runStudy <- function(connectionDetails = NULL,
   counts <- readr::read_csv(file.path(exportFolder, "cohort_count.csv"), col_types = readr::cols())
   colnames(counts) <- SqlRender::snakeCaseToCamelCase(colnames(counts))
 
-  # Extract outcome counts -----------------------------------------------------------------------
-  ParallelLogger::logInfo("Extract outcome counts")
-  outcomeProportions <- exportOutcomeProportions(connection = connection,
+  # Extract feature counts -----------------------------------------------------------------------
+  ParallelLogger::logInfo("Extract feature counts")
+  featureProportions <- exportFeatureProportions(connection = connection,
                                                  cohortDatabaseSchema = cohortDatabaseSchema,
-                                                 cohortOutcomeTable = cohortOutcomeTable)
-  if (nrow(outcomeProportions) > 0) {
-    outcomeProportions$databaseId <- databaseId
-    outcomeProportions <- enforceMinCellValue(outcomeProportions, "outcome_count", minCellCount)
+                                                 cohortTable = cohortTable,
+                                                 featureSummaryTable = featureSummaryTable)
+  if (nrow(featureProportions) > 0) {
+    featureProportions$databaseId <- databaseId
+    featureProportions <- enforceMinCellValue(featureProportions, "featureCount", minCellCount)
   }
-  # TODO: Format this output to put it into the covariate summary - pre/post index
-  writeToCsv(outcomeProportions, file.path(exportFolder, "outcome_proportions.csv"))
+  features <- formatCovariates(featureProportions)
+  writeToCsv(features, file.path(exportFolder, "covariate.csv"), incremental = incremental, covariateId = features$covariateId)
+  featureValues <- formatCovariateValues(featureProportions, counts, minCellCount)
+  featureValues <- featureValues[,c("cohortId", "covariateId", "mean", "sd", "databaseId")]
+  writeToCsv(featureValues, file.path(exportFolder, "covariate_value.csv"), incremental = incremental, covariateId = features$covariateId)
+  # Also keeping a raw output for debugging
+  writeToCsv(featureProportions, file.path(exportFolder, "feature_proportions.csv"))
 
   # Read in the cohort counts
   counts <- readr::read_csv(file.path(exportFolder, "cohort_count.csv"), col_types = readr::cols())
@@ -223,8 +234,8 @@ runStudy <- function(connectionDetails = NULL,
   featureExtractionCohorts <- cohortsForExport[cohortsForExport$cohortId %in% counts$cohortId, ]
   
   # Cohort characterization ---------------------------------------------------------------
-  runCohortCharacterization <- function(row, covariateSettings, settingsDescription) {
-    ParallelLogger::logInfo("- Creating characterization for cohort: ", row$cohortName, " (settings: ", settingsDescription, ")")
+  runCohortCharacterization <- function(row, covariateSettings, windowId) {
+    ParallelLogger::logInfo("- Creating characterization for cohort: ", row$cohortName)
     data <- getCohortCharacteristics(connection = connection,
                                      cdmDatabaseSchema = cdmDatabaseSchema,
                                      oracleTempSchema = oracleTempSchema,
@@ -235,77 +246,45 @@ runStudy <- function(connectionDetails = NULL,
     if (nrow(data) > 0) {
       data$cohortId <- row$cohortId
     }
+    
+    data$covariateId <- data$covariateId * 10 + windowId
     return(data)
   }
-
-  # Baseline Cohort characterization ---------------------------------------------------------------
-  ParallelLogger::logInfo("******************************************")
-  ParallelLogger::logInfo("Creating baseline cohort characterizations")
-  ParallelLogger::logInfo("******************************************")
-  baselineCovariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE,
-                                                                          useDemographicsAgeGroup = TRUE,
-                                                                          useConditionGroupEraShortTerm = TRUE,
-                                                                          useConditionGroupEraLongTerm = TRUE,
-                                                                          useDrugGroupEraShortTerm = TRUE,
-                                                                          useDrugGroupEraLongTerm = TRUE,
-                                                                          longTermStartDays = -365,
-                                                                          shortTermStartDays = -30,
-                                                                          endDays = -1)
-  task <- "runBaselineCohortCharacterization"
-  settingsDescription <- paste0(baselineCovariateSettings$endDays, " to ", baselineCovariateSettings$shortTermStartDays, " start days")
-  subset <- subsetToRequiredCohorts(cohorts = featureExtractionCohorts,
-                                    task = task,
-                                    incremental = incremental,
-                                    recordKeepingFile = recordKeepingFile)
-  if (nrow(subset) > 0) {
-    data <- lapply(split(subset, subset$cohortId), runCohortCharacterization, covariateSettings = baselineCovariateSettings, settingsDescription = settingsDescription)
-    data <- do.call(rbind, data)
-    covariates <- formatCovariates(data)
-    writeToCsv(covariates, file.path(exportFolder, "covariate.csv"), incremental = incremental, covariateId = covariates$covariateId)
-    data <- formatCovariateValues(data, counts, minCellCount)
-    writeToCsv(data, file.path(exportFolder, "covariate_value.csv"), incremental = incremental, cohortId = subset$cohortId)
-    recordTasksDone(cohortId = subset$cohortId,
-                    task = task,
-                    checksum = subset$checksum,
-                    recordKeepingFile = recordKeepingFile,
-                    incremental = incremental)
-  }
-
-  # Post-index Cohort characterization ---------------------------------------------------------------
-  ParallelLogger::logInfo("********************************************")
-  ParallelLogger::logInfo("Creating post-index cohort characterizations")
-  ParallelLogger::logInfo("********************************************")
-  task <- "runPostIndexCohortCharacterization"
-  postIndexCovariateSettings1 <- FeatureExtraction::createCovariateSettings(useConditionGroupEraStartShortTerm = TRUE,
-                                                                            useDrugGroupEraStartShortTerm = TRUE,
-                                                                            shortTermStartDays = 0,
-                                                                            endDays = 0)
-  settingsDescription1 <- paste0(postIndexCovariateSettings1$shortTermStartDays, " to ", postIndexCovariateSettings1$endDays, " days")
-  postIndexCovariateSettings2 <- FeatureExtraction::createCovariateSettings(useConditionGroupEraStartShortTerm = TRUE,
-                                                                            useDrugGroupEraStartLongTerm = TRUE,
-                                                                            longTermStartDays = 0,
-                                                                            endDays = 30)
-  settingsDescription2 <- paste0(postIndexCovariateSettings2$longTermStartDays, " to ", postIndexCovariateSettings1$endDays, " days")
   
-  subset <- subsetToRequiredCohorts(cohorts = featureExtractionCohorts,
-                                    task = task,
-                                    incremental = incremental,
-                                    recordKeepingFile = recordKeepingFile)
-  if (nrow(subset) > 0) {
-    data1 <- lapply(split(subset, subset$cohortId), runCohortCharacterization, covariateSettings = postIndexCovariateSettings1, settingsDescription = settingsDescription1)
-    data1 <- do.call(rbind, data1)
-    data2 <- lapply(split(subset, subset$cohortId), runCohortCharacterization, covariateSettings = postIndexCovariateSettings2, settingsDescription = settingsDescription2)
-    data2 <- do.call(rbind, data2)
-    data <- rbind(data1, data2)
-    covariates <- formatCovariates(data)
-    writeToCsv(covariates, file.path(exportFolder, "post_index_covariate.csv"), incremental = incremental, covariateId = covariates$covariateId)
-    data <- formatCovariateValues(data, counts, minCellCount)
-    writeToCsv(data, file.path(exportFolder, "post_index_covariate_value.csv"), incremental = incremental, cohortId = subset$cohortId)
-    recordTasksDone(cohortId = subset$cohortId,
-                    task = task,
-                    checksum = subset$checksum,
-                    recordKeepingFile = recordKeepingFile,
-                    incremental = incremental)
+  featureTimeWindows <- getFeatureTimeWindows()  
+  for (i in 1:length(featureTimeWindows)) {
+    windowStart <- featureTimeWindows$windowStart[i]
+    windowEnd <- featureTimeWindows$windowEnd[i]
+    windowId <- featureTimeWindows$windowId[i]
+    ParallelLogger::logInfo("********************************************************************************************")
+    ParallelLogger::logInfo(paste0("Characterize concept features for start: ", windowStart, ", end: ", windowEnd, " (windowId=", windowId, ")"))
+    ParallelLogger::logInfo("********************************************************************************************")
+    createDemographics <- (i == 1)
+    covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = createDemographics,
+                                                                            useDemographicsAgeGroup = createDemographics,
+                                                                            useConditionGroupEraShortTerm = TRUE,
+                                                                            useDrugGroupEraShortTerm = TRUE,
+                                                                            shortTermStartDays = windowStart,
+                                                                            endDays = windowEnd)
+    task <- paste0("runCohortCharacterizationWindowId", windowId)
+    subset <- subsetToRequiredCohorts(cohorts = featureExtractionCohorts,
+                                      task = task,
+                                      incremental = incremental,
+                                      recordKeepingFile = recordKeepingFile)
+    if (nrow(subset) > 0) {
+      data <- lapply(split(subset, subset$cohortId), runCohortCharacterization, covariateSettings = covariateSettings, windowId = windowId)
+      data <- do.call(rbind, data)
+      covariates <- formatCovariates(data)
+      writeToCsv(covariates, file.path(exportFolder, "covariate.csv"), incremental = incremental, covariateId = covariates$covariateId)
+      data <- formatCovariateValues(data, counts, minCellCount)
+      writeToCsv(data, file.path(exportFolder, "covariate_value.csv"), incremental = incremental, cohortId = subset$cohortId)
+      recordTasksDone(cohortId = subset$cohortId,
+                      task = task,
+                      checksum = subset$checksum,
+                      recordKeepingFile = recordKeepingFile,
+                      incremental = incremental)
+    }
+    
   }
 
   # Add all to zip file -------------------------------------------------------------------------------
@@ -330,11 +309,6 @@ getUserSelectableCohortGroups <- function() {
   return(cohortGroups[cohortGroups$userCanSelect == TRUE, ])
 }
 
-getThisPackageName <- function() {
-  return("Covid19TargetAndOutcomeCharacterization")
-}
-
-
 formatCovariates <- function(data) {
   # Drop covariates with mean = 0 after rounding to 4 digits:
   data <- data[round(data$mean, 4) != 0, ]
@@ -358,24 +332,6 @@ formatCovariateValues <- function(data, counts, minCellCount) {
   return(data)  
 }
 
-getCohortGroups <- function () {
-  packageName <- getThisPackageName()
-  pathToCsv <- system.file("settings/CohortGroups.csv", package = packageName)
-  cohortGroups <- readr::read_csv(pathToCsv, col_types = readr::cols())
-  return(cohortGroups);
-}
-
-getCohortsToCreate <- function() {
-  packageName <- getThisPackageName()
-  cohortGroups <- getCohortGroups()
-  cohorts <- data.frame()
-  for(i in 1:nrow(cohortGroups)) {
-    c <- readr::read_csv(system.file(cohortGroups$fileName[i], package = packageName), col_types = readr::cols())
-    c$cohortType <- cohortGroups$cohortGroup[i]
-    cohorts <- rbind(cohorts, c)
-  }
-  return(cohorts)  
-}
 
 loadCohortsFromPackage <- function(cohortIds) {
   packageName = getThisPackageName()
@@ -409,10 +365,6 @@ loadCohortsForExportFromPackage <- function(cohortIds, packageName) {
   packageName = getThisPackageName()
   cohorts <- getCohortsToCreate()
   cohorts$atlasId <- NULL
-  cohorts$targetId <- 0
-  cohorts$targetName <- ""
-  cohorts$strataId <- 0
-  cohorts$strataName <- ""
   if ("atlasName" %in% colnames(cohorts)) {
     cohorts <- dplyr::rename(cohorts, cohortName = "name", cohortFullName = "atlasName")
   } else {
@@ -421,25 +373,15 @@ loadCohortsForExportFromPackage <- function(cohortIds, packageName) {
   
   # Get the stratified cohorts for the study
   # and join to the cohorts to create to get the names
-  strataCohorts <- getAllStrata()
+  #strataCohorts <- getAllStrata()
   targetStrataXref <- getTargetStrataXref()
-  targetStrataXrefWithNames <- dplyr::inner_join(strataCohorts, 
-                                                 targetStrataXref, 
-                                                 by = c("cohortId" = "strataId"))
-  targetStrataXrefWithNames$atlasId <- NULL
-  targetStrataXrefWithNames <- dplyr::rename(targetStrataXrefWithNames, strataId = "cohortId", strataName = "name", cohortId = "cohortId.y")
-  targetStrataXrefWithNames <- dplyr::inner_join(cohorts[,c("cohortId","cohortName")], 
-                                                 targetStrataXrefWithNames, 
-                                                 by = c("cohortId" = "targetId"))
-  
-  targetStrataXrefWithNames <- dplyr::rename(targetStrataXrefWithNames, targetId = "cohortId", targetName = "cohortName", cohortId = "cohortId.y")
-  targetStrataXrefWithNames$cohortName <- paste(targetStrataXrefWithNames$targetName,
-                                                ifelse(targetStrataXrefWithNames$cohortType == "TwS", "with", "without"),
-                                                targetStrataXrefWithNames$strataName)
-  targetStrataXrefWithNames$cohortFullName <- targetStrataXrefWithNames$cohortName
+  targetStrataXref <- dplyr::rename(targetStrataXref, cohortName = "name")
+  targetStrataXref$cohortFullName <- targetStrataXref$cohortName
+  targetStrataXref$targetId <- NULL
+  targetStrataXref$strataId <- NULL
   
   cols <- names(cohorts)
-  cohorts <- rbind(cohorts, targetStrataXrefWithNames[cols])
+  cohorts <- rbind(cohorts, targetStrataXref[cols])
     
   if (!is.null(cohortIds)) {
     cohorts <- cohorts[cohorts$cohortId %in% cohortIds, ]

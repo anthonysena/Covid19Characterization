@@ -12,7 +12,6 @@ instantiateCohortSet(
   cohortDatabaseSchema = cdmDatabaseSchema,
   cohortTable = "cohort",
   cohortIds = NULL,
-  cohortCounts = NULL,
   minCellCount,
   generateInclusionStats = FALSE,
   inclusionStatisticsFolder = NULL,

@@ -1,10 +1,10 @@
-Package: Covid19TargetAndOutcomeCharacterization
+Package: Covid19Characterization
 Type: Package
-Title: A Central Package for Evaluation the Cohorts and Outcomes amongst COVID-19 Studies
+Title: Characterization of COVID-19 and Influenza patients
 Version: 0.0.1
 Author: Anthony G. Sena [aut, cre]
 Maintainer: Anthony G. Sena <asena5@its.jnj.com>
-Description: A package for characterizing COVID-19 patients with and without various outcomes.
+Description: A package for characterizing COVID-19 patients with and without various features.
 Depends:
   DatabaseConnector (>= 2.2.0)
 Imports:

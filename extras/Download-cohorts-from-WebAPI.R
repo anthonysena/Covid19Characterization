@@ -4,7 +4,7 @@ getCohortDefinitionExpression <- function(definitionId, baseUrl) {
   httr::content(json)
 }
 
-cohortPath <- "E:/Covid19TargetAndOutcomeCharacterization/testCohorts"
+cohortPath <- "E:/Covid19Characterization/testCohorts"
 
 cdT <- getCohortDefinitionExpression(definitionId = 5902, baseUrl = Sys.getenv("baseUrl"))
 write(cdT$expression, file = file.path(cohortPath, "influenza.json"))

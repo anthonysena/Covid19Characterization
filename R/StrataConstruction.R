@@ -42,8 +42,7 @@ createBulkStrataFromFile <- function(connection,
                                      incremental,
                                      recordKeepingFile) {
   packageName <- getThisPackageName()
-  pathToCsv <- system.file("settings/BulkStrata.csv", package = packageName)
-  bulkStrataToCreate <- readr::read_csv(pathToCsv, col_types = readr::cols())
+  bulkStrataToCreate <- getBulkStrata()
   targetStrataXref <- getTargetStrataXref()
   
   if (incremental) {
@@ -90,8 +89,7 @@ createBulkStrataFromCohorts <- function(connection,
                                         incremental,
                                         recordKeepingFile) {
   packageName <- getThisPackageName()
-  pathToCsv <- system.file("settings/CohortsToCreateStrata.csv", package = packageName)
-  strataCohorts <- readr::read_csv(pathToCsv, col_types = readr::cols())
+  strataCohorts <- getCohortBasedStrata()
   targetStrataXref <- getTargetStrataXref()
   
   # Get the strata to create for the targets selected
@@ -155,21 +153,11 @@ serializeBulkStrataName <- function(bulkStrataToCreate) {
   return(paste(bulkStrataToCreate$generationScript, bulkStrataToCreate$name, bulkStrataToCreate$parameterValue, sep = "|"))
 }
 
-getTargetStrataXref <- function() {
-  packageName <- getThisPackageName()
-  pathToCsv <- system.file("settings/targetStrataXref.csv", package = packageName)
-  targetStrataXref <- readr::read_csv(pathToCsv, col_types = readr::cols())
-  return(targetStrataXref)  
-}
-
 getAllStrata <- function() {
-  packageName <- getThisPackageName()
   colNames <- c("name", "cohortId") # Use this to subset to the columns of interest
-  pathToCsv <- system.file("settings/BulkStrata.csv", package = packageName)
-  bulkStrata <- readr::read_csv(pathToCsv, col_types = readr::cols())
+  bulkStrata <- getBulkStrata()
   bulkStrata <- bulkStrata[, match(colNames, names(bulkStrata))]
-  pathToCsv <- system.file("settings/CohortsToCreateStrata.csv", package = packageName)
-  atlasCohortStrata <- readr::read_csv(pathToCsv, col_types = readr::cols())
+  atlasCohortStrata <- getCohortBasedStrata()
   atlasCohortStrata <- atlasCohortStrata[, match(colNames, names(atlasCohortStrata))]
   strata <- rbind(bulkStrata, atlasCohortStrata)
   return(strata)  

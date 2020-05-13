@@ -1,6 +1,6 @@
 # Copyright 2020 Observational Health Data Sciences and Informatics
 #
-# This file is part of Covid19TargetAndOutcomeCharacterization
+# This file is part of Covid19Characterization
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 # Format and check code ---------------------------------------------------
 OhdsiRTools::formatRFolder()
-OhdsiRTools::checkUsagePackage("Covid19TargetAndOutcomeCharacterization")
+OhdsiRTools::checkUsagePackage("Covid19Characterization")
 OhdsiRTools::updateCopyrightYearFolder()
 
 # Create manual -----------------------------------------------------------
-unlink("extras/Covid19TargetAndOutcomeCharacterization.pdf")
-shell("R CMD Rd2pdf ./ --output=extras/Covid19TargetAndOutcomeCharacterization.pdf")
+unlink("extras/Covid19Characterization.pdf")
+shell("R CMD Rd2pdf ./ --output=extras/Covid19Characterization.pdf")
 
 pkgdown::build_site()
 
@@ -35,37 +35,50 @@ for (i in 1:nrow(cohortGroups)) {
                                                    insertTableSql = TRUE,
                                                    insertCohortCreationR = FALSE,
                                                    generateStats = FALSE,
-                                                   packageName = "Covid19TargetAndOutcomeCharacterization")
+                                                   packageName = "Covid19Characterization")
 }
 unlink("inst/cohorts/InclusionRules.csv")
 
-# Create the list of combinations of T, TwS, TwoS for the combinations of strata
+# Create the list of combinations of T, TwS, TwoS for the combinations of strata ----------------------------
 colNames <- c("name", "cohortId") # Use this to subset to the columns of interest
 # Target cohorts
 covidCohorts <- read.csv("inst/settings/CohortsToCreateCovid.csv")
 influenzaCohorts <- read.csv("inst/settings/CohortsToCreateInfluenza.csv")
 targetCohorts <- rbind(covidCohorts, influenzaCohorts)
 targetCohorts <- targetCohorts[, match(colNames, names(targetCohorts))]
+names(targetCohorts) <- c("targetName", "targetId")
 # Strata cohorts
+bulkStrataColNames <- c("inverseName", "name", "cohortId") # Use this to subset to the columns of interest
 bulkStrata <- read.csv("inst/settings/BulkStrata.csv")
-bulkStrata <- bulkStrata[, match(colNames, names(bulkStrata))]
+bulkStrata <- bulkStrata[, match(bulkStrataColNames, names(bulkStrata))]
+bulkStrata$name <- paste("with", bulkStrata$name)
+bulkStrata$inverseName <- paste("with", bulkStrata$inverseName)
 atlasCohortStrata <- read.csv("inst/settings/CohortsToCreateStrata.csv")
 atlasCohortStrata <- atlasCohortStrata[, match(colNames, names(atlasCohortStrata))]
+atlasCohortStrata$inverseName <- paste0("without ", atlasCohortStrata$name) 
+atlasCohortStrata$name <- paste0("with ", atlasCohortStrata$name) 
 strata <- rbind(bulkStrata, atlasCohortStrata)
+names(strata) <- c("strataInverseName", "strataName", "strataId")
 # Get all of the unique combinations of target + strata
-targetStrataCP <- do.call(expand.grid, lapply(list(targetCohorts$cohortId, strata$cohortId), unique))
+targetStrataCP <- do.call(expand.grid, lapply(list(targetCohorts$targetId, strata$strataId), unique))
 names(targetStrataCP) <- c("targetId", "strataId")
+targetStrataCP <- merge(targetStrataCP, targetCohorts)
+targetStrataCP <- merge(targetStrataCP, strata)
 targetStrataCP$cohortId <- (targetStrataCP$targetId * 1000000) + (targetStrataCP$strataId*10)
 tWithS <- targetStrataCP
 tWithoutS <- targetStrataCP
 tWithS$cohortId <- tWithS$cohortId + 1
 tWithS$cohortType <- "TwS"
+tWithS$name <- paste(tWithS$targetName, tWithS$strataName)
 tWithoutS$cohortId <- tWithoutS$cohortId + 2
 tWithoutS$cohortType <- "TwoS"
+tWithoutS$name <- paste(tWithS$targetName, tWithS$strataInverseName)
 targetStrataXRef <- rbind(tWithS, tWithoutS)
+targetStrataXRef <- targetStrataXRef[,c("targetId","strataId","cohortId","cohortType","name")]
+
 # Write out the final targetStrataXRef
 readr::write_csv(targetStrataXRef, "inst/settings/targetStrataXref.csv")
 
 
 # Store environment in which the study was executed -----------------------
-OhdsiRTools::insertEnvironmentSnapshotInPackage("Covid19TargetAndOutcomeCharacterization")
+OhdsiRTools::insertEnvironmentSnapshotInPackage("Covid19Characterization")
