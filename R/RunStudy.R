@@ -210,9 +210,10 @@ runStudy <- function(connectionDetails = NULL,
                                                  cohortOutcomeTable = cohortOutcomeTable)
   if (nrow(outcomeProportions) > 0) {
     outcomeProportions$databaseId <- databaseId
-    outcomeProportions <- enforceMinCellValue(counts, "outcome_count", minCellCount)
+    outcomeProportions <- enforceMinCellValue(outcomeProportions, "outcome_count", minCellCount)
   }
-  writeToCsv(counts, file.path(exportFolder, "outcome_proportions.csv"))
+  # TODO: Format this output to put it into the covariate summary - pre/post index
+  writeToCsv(outcomeProportions, file.path(exportFolder, "outcome_proportions.csv"))
 
   # Read in the cohort counts
   counts <- readr::read_csv(file.path(exportFolder, "cohort_count.csv"), col_types = readr::cols())
@@ -275,12 +276,12 @@ runStudy <- function(connectionDetails = NULL,
   ParallelLogger::logInfo("Creating post-index cohort characterizations")
   ParallelLogger::logInfo("********************************************")
   task <- "runPostIndexCohortCharacterization"
-  postIndexCovariateSettings1 <- FeatureExtraction::createCovariateSettings(useConditionGroupEraShortTerm = TRUE,
+  postIndexCovariateSettings1 <- FeatureExtraction::createCovariateSettings(useConditionGroupEraStartShortTerm = TRUE,
                                                                             useDrugGroupEraStartShortTerm = TRUE,
                                                                             shortTermStartDays = 0,
                                                                             endDays = 0)
   settingsDescription1 <- paste0(postIndexCovariateSettings1$shortTermStartDays, " to ", postIndexCovariateSettings1$endDays, " days")
-  postIndexCovariateSettings2 <- FeatureExtraction::createCovariateSettings(useConditionGroupEraLongTerm = TRUE,
+  postIndexCovariateSettings2 <- FeatureExtraction::createCovariateSettings(useConditionGroupEraStartShortTerm = TRUE,
                                                                             useDrugGroupEraStartLongTerm = TRUE,
                                                                             longTermStartDays = 0,
                                                                             endDays = 30)
