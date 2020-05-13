@@ -22,28 +22,25 @@ INSERT INTO @cohort_database_schema.@cohort_outcome_table (
 	outcome_count
 )
 SELECT 
-	ts.cohort_definition_id, 
-	o.cohort_definition_id outcome_cohort_definition_id, 
-	w.window_id, 
-	SUM(
-	  CASE WHEN 
-	    DATEADD(dd, o.window_start, ts.cohort_start_date) <= o.cohort_start_date 
-	    AND DATEADD(dd, o.window_end, ts.cohort_start_date) >= o.cohort_start_date 
-	    THEN 1 
-	  ELSE 0 END
-	) outcome_count
-from @cohort_database_schema.@cohort_table ts
-inner join (
-	SELECT *
-	FROM @cohort_database_schema.@cohort_staging_table c, #outcome_windows
-	WHERE c.cohort_definition_id IN (@outcome_ids)
-) o ON o.subject_id = ts.subject_id
-GROUP BY
-	ts.cohort_definition_id, 
-	o.cohort_definition_id,
-	o.window_id, 
-	o.window_start,
-	o.window_end
+  a.cohort_definition_id,
+  a.outcome_cohort_definition_id,
+  a.window_id,
+  COUNT(DISTINCT a.subject_id) outcome_count
+FROM (
+  SELECT DISTINCT
+  	ts.cohort_definition_id, 
+  	ts.subject_id,
+  	o.cohort_definition_id outcome_cohort_definition_id, 
+  	w.window_id
+  from @cohort_database_schema.@cohort_table ts
+  inner join (
+  	SELECT *
+  	FROM @cohort_database_schema.@cohort_staging_table c, #outcome_windows
+  	WHERE c.cohort_definition_id IN (@outcome_ids)
+  ) o ON o.subject_id = ts.subject_id
+  AND DATEADD(dd, o.window_start, ts.cohort_start_date) <= o.cohort_start_date 
+  AND DATEADD(dd, o.window_end, ts.cohort_start_date) >= o.cohort_start_date 
+) a
 ;
 
 @outcome_time_window_table_drop
