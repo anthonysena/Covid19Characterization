@@ -40,18 +40,18 @@ for (i in 1:nrow(cohortGroups)) {
 unlink("inst/cohorts/InclusionRules.csv")
 
 # Create the list of combinations of T, TwS, TwoS for the combinations of strata ----------------------------
-colNames <- c("name", "cohortId") # Use this to subset to the columns of interest
-settingsPath <- "inst/settings/"
+settingsPath <- "inst/settings"
 useSubset <- as.logical(Sys.getenv("USE_SUBSET"))
 if (useSubset) {
   settingsPath <- file.path(settingsPath, "subset/")
 }
-# Target cohorts
 covidCohorts <- read.csv(file.path(settingsPath, "CohortsToCreateCovid.csv"))
 influenzaCohorts <- read.csv(file.path(settingsPath, "CohortsToCreateInfluenza.csv"))
 bulkStrata <- read.csv(file.path(settingsPath, "BulkStrata.csv"))
 atlasCohortStrata <- read.csv(file.path(settingsPath, "CohortsToCreateStrata.csv"))
 
+# Target cohorts
+colNames <- c("name", "cohortId") # Use this to subset to the columns of interest
 targetCohorts <- rbind(covidCohorts, influenzaCohorts)
 targetCohorts <- targetCohorts[, match(colNames, names(targetCohorts))]
 names(targetCohorts) <- c("targetName", "targetId")
@@ -83,7 +83,7 @@ targetStrataXRef <- rbind(tWithS, tWithoutS)
 targetStrataXRef <- targetStrataXRef[,c("targetId","strataId","cohortId","cohortType","name")]
 
 # Write out the final targetStrataXRef
-readr::write_csv(targetStrataXRef, "inst/settings/targetStrataXref.csv")
+readr::write_csv(targetStrataXRef, file.path(settingsPath, "targetStrataXref.csv"))
 
 
 # Store environment in which the study was executed -----------------------

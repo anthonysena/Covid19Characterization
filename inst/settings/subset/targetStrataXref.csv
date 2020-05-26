@@ -1,49 +1,25 @@
 targetId,strataId,cohortId,cohortType,name
-1,100,1001001,TwS,covid 1 with Full 30-day follow up
-2,100,2001001,TwS,covid 2 with Full 30-day follow up
-7,100,7001001,TwS,influenza 1 with Full 30-day follow up
-8,100,8001001,TwS,influenza 2 with Full 30-day follow up
-1,101,1001011,TwS,covid 1 with Sex = Female
-2,101,2001011,TwS,covid 2 with Sex = Female
-7,101,7001011,TwS,influenza 1 with Sex = Female
-8,101,8001011,TwS,influenza 2 with Sex = Female
-2,102,2001021,TwS,covid 2 with Age >= 18
-1,102,1001021,TwS,covid 1 with Age >= 18
-8,102,8001021,TwS,influenza 2 with Age >= 18
-7,102,7001021,TwS,influenza 1 with Age >= 18
-2,103,2001031,TwS,covid 2 with Age >= 65
-1,103,1001031,TwS,covid 1 with Age >= 65
-8,103,8001031,TwS,influenza 2 with Age >= 65
-7,103,7001031,TwS,influenza 1 with Age >= 65
-1,200,1002001,TwS,covid 1 with Type 2 Diabetes Mellitus
-2,200,2002001,TwS,covid 2 with Type 2 Diabetes Mellitus
-7,200,7002001,TwS,influenza 1 with Type 2 Diabetes Mellitus
-8,200,8002001,TwS,influenza 2 with Type 2 Diabetes Mellitus
-1,201,1002011,TwS,covid 1 with Hypertension
-2,201,2002011,TwS,covid 2 with Hypertension
-7,201,7002011,TwS,influenza 1 with Hypertension
-8,201,8002011,TwS,influenza 2 with Hypertension
-1,100,1001002,TwoS,covid 1 with < 30-day follow up
-2,100,2001002,TwoS,covid 2 with < 30-day follow up
-7,100,7001002,TwoS,influenza 1 with < 30-day follow up
-8,100,8001002,TwoS,influenza 2 with < 30-day follow up
-1,101,1001012,TwoS,covid 1 with Sex = Male
-2,101,2001012,TwoS,covid 2 with Sex = Male
-7,101,7001012,TwoS,influenza 1 with Sex = Male
-8,101,8001012,TwoS,influenza 2 with Sex = Male
-2,102,2001022,TwoS,covid 2 with Age < 18
-1,102,1001022,TwoS,covid 1 with Age < 18
-8,102,8001022,TwoS,influenza 2 with Age < 18
-7,102,7001022,TwoS,influenza 1 with Age < 18
-2,103,2001032,TwoS,covid 2 with Age < 65
-1,103,1001032,TwoS,covid 1 with Age < 65
-8,103,8001032,TwoS,influenza 2 with Age < 65
-7,103,7001032,TwoS,influenza 1 with Age < 65
-1,200,1002002,TwoS,covid 1 without Type 2 Diabetes Mellitus
-2,200,2002002,TwoS,covid 2 without Type 2 Diabetes Mellitus
-7,200,7002002,TwoS,influenza 1 without Type 2 Diabetes Mellitus
-8,200,8002002,TwoS,influenza 2 without Type 2 Diabetes Mellitus
-1,201,1002012,TwoS,covid 1 without Hypertension
-2,201,2002012,TwoS,covid 2 without Hypertension
-7,201,7002012,TwoS,influenza 1 without Hypertension
-8,201,8002012,TwoS,influenza 2 without Hypertension
+111,100,111001001,TwS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Full 30-day follow up
+111,100,111001001,TwS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Prevalent Type 2 Diabetes Mellitus
+112,100,112001001,TwS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Full 30-day follow up
+112,100,112001001,TwS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Prevalent Type 2 Diabetes Mellitus
+111,101,111001011,TwS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Sex = Female
+111,101,111001011,TwS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Prevalent hypertension
+112,101,112001011,TwS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Sex = Female
+112,101,112001011,TwS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Prevalent hypertension
+111,102,111001021,TwS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Age >= 18
+112,102,112001021,TwS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Age >= 18
+111,103,111001031,TwS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Age >= 65
+112,103,112001031,TwS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Age >= 65
+111,100,111001002,TwoS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with < 30-day follow up
+111,100,111001002,TwoS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation without Prevalent Type 2 Diabetes Mellitus
+112,100,112001002,TwoS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with < 30-day follow up
+112,100,112001002,TwoS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation without Prevalent Type 2 Diabetes Mellitus
+111,101,111001012,TwoS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Sex = Male
+111,101,111001012,TwoS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation without Prevalent hypertension
+112,101,112001012,TwoS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Sex = Male
+112,101,112001012,TwoS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation without Prevalent hypertension
+111,102,111001022,TwoS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Age < 18
+112,102,112001022,TwoS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Age < 18
+111,103,111001032,TwoS,Influenza diagnosed or with a positive test 2017-2018 with at least 365d prior observation with Age < 65
+112,103,112001032,TwoS,Influenza diagnosed or with a positive test 2017-2018 with no required prior observation with Age < 65
