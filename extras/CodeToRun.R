@@ -40,19 +40,8 @@
 # Once you have established an .Renviron file, you must restart your R session for R to pick up these new
 # variables. 
 #
-# In section 2 below, you will also need to update the code to use your site specific values for:
-# 
-# - oracleTempSchema := If using Oracle, what is the schema to use. Please see http://ohdsi.github.io/DatabaseConnector/ for more details.
-# - databaseId := The database identifier to use for reporting results. Please aim to keep this to a short name that uniquely idenifies your database.
-# - databaseName := The full name of your database
-# - databaseDescription := A full description of your database.
-# - outputFolder := The file path where the results of the study are placed.
-# - cdmDatabaseSchema := The database schema where the OMOP CDM data exists. In the case of SQL Server, this should be the database + schema.
-# - cohortDatabaseSchema := The database schema where the cohort data is created. The account specified as DB_USER must have full rights to that schema to create/drop tables
-# - cohortTable := The name of the table to use the cohorts for the study
-# - cohortStagingTable := The name of the table used to stage the cohorts used in this study
-# - featureSummaryTable := The name of the table to hold the feature summary for this study
-#-----------------------------------------------------------------------------------------------
+# In section 2 below, you will also need to update the code to use your site specific values. Please scroll
+# down for specific instructions.
 #-----------------------------------------------------------------------------------------------
 #
 # 
@@ -94,6 +83,52 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 password = password,
                                                                 port = port)
 
+
+#-----------------------------------------------------------------------------------------------
+# Instructions for the remaining variables
+#-----------------------------------------------------------------------------------------------
+# 
+# - oracleTempSchema := If using Oracle, what is the schema to use. Please see http://ohdsi.github.io/DatabaseConnector/ for more details.
+# - databaseId := The database identifier to use for reporting results. Please review this list and use the one that matches your site:
+# 
+#   | Database_id |                               Database Name                                |
+#   |-------------|----------------------------------------------------------------------------|
+#   | AU_ePBRN    | Australian Electronic Practice Based Research Network                      |
+#   | AUSOM       | Ajou University School of Medicine Database                                |
+#   | CCAE        | IBM MarketScan® Commercial Database                                        |
+#   | CUIMC       | Columbia University Irving Medical Center                                  |
+#   | DCMC        | Daegu Catholic University Medical Center                                   |
+#   | HIRA        | Health Insurance and Review Assessment                                     |
+#   | HM          | HM Hospitales                                                              |
+#   | IPCI        | Integrated Primary Care Information                                        |
+#   | JMDC        | Japan Medical Data Center                                                  |
+#   | MDCD        | IBM MarketScan® Multi-State Medicaid Database                              |
+#   | MDCR        | IBM MarketScan® Medicare Supplemental Database                             |
+#   | OptumDoD    | Optum® De-Identified Clinformatic Data Mart Database – Date of Death (DOD) |
+#   | optumEhr    | Optum® de-identified Electronic Health Record Dataset                      |
+#   | SIDIAP      | The Information System for Research in Primary Care (SIDIAP)               |
+#   | STARR       | STAnford medicine Research data Repository                                 |
+#   | TRDW        | Tufts Researrch Data Warehouse                                             |
+#   | VA          | Department of Veterans Affairs                                             |
+#   
+#    *** If your database is not in this list, please specify the database_id yourself and report it back to the study lead ***
+#
+# - databaseName := The full name of your database
+# - databaseDescription := A full description of your database.
+# - outputFolder := The file path where the results of the study are placed.
+# - cdmDatabaseSchema := The database schema where the OMOP CDM data exists. In the case of SQL Server, this should be the database + schema.
+# - cohortDatabaseSchema := The database schema where the cohort data is created. The account specified as DB_USER must have full rights to that schema to create/drop tables
+# - cohortTable := The name of the table to use the cohorts for the study
+# - cohortStagingTable := The name of the table used to stage the cohorts used in this study
+# - featureSummaryTable := The name of the table to hold the feature summary for this study
+# - minCellCount := Aggregate stats that yield a value < minCellCount are censored in the output
+# 
+# Also worth noting: The runStudy function below allows for the input of cohort groups (covid and/or influenza)
+# in the event that you would like to characterize a subset of these 2 target groups. To run the analysis
+# on a single group, uncomment the parameter "cohortGroups = c("covid", "influenza")" and change the list
+# to reflect the cohort group(s) you'd like to use. By default, the package will use both sets of cohorts
+#-----------------------------------------------------------------------------------------------
+
 # For Oracle: define a schema that can be used to emulate temp tables:
 oracleTempSchema <- NULL
 
@@ -109,6 +144,7 @@ cohortDatabaseSchema <- "scratch.dbo"
 cohortTable <- paste0("AS_S0_full_", databaseId)
 cohortStagingTable <- paste0(cohortTable, "_stg")
 featureSummaryTable <- paste0(cohortTable, "_smry")
+minCellCount <- 5
 
 # For uploading the results. You should have received the key file from the study coordinator:
 keyFileName <- "c:/home/keyFiles/study-data-site-covid19.dat"
@@ -127,7 +163,7 @@ runStudy(connectionDetails = connectionDetails,
          databaseId = databaseId,
          databaseName = databaseName,
          databaseDescription = databaseDescription,
-         #cohortGroups = c("influenza"),
+         #cohortGroups = c("covid", "influenza"),
          incremental = TRUE,
          minCellCount = 5) 
 

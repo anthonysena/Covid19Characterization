@@ -23,18 +23,8 @@ createFeatureProportions <- function(connection,
                                            feature_time_window_table_create = featureTimeWindowTempTableSql$create,
                                            feature_time_window_table_drop = featureTimeWindowTempTableSql$drop)
   
-  cohortId <- 1000 # Represents the range of feature cohorts used in this process
-  recordKeepingFile <- "FeatureProportions.csv"
-  if (!incremental || isTaskRequired(cohortId = cohortId,
-                                     checksum = computeChecksum(sql),
-                                     recordKeepingFile = recordKeepingFile)) {
-
-    ParallelLogger::logInfo("Compute feature proportions for all target and strata")
-    DatabaseConnector::executeSql(connection, sql)
-    if (incremental) {
-      recordTasksDone(cohortId = cohortId, checksum = computeChecksum(sql), recordKeepingFile = recordKeepingFile)
-    }
-  }
+  ParallelLogger::logInfo("Compute feature proportions for all target and strata")
+  DatabaseConnector::executeSql(connection, sql)
 }
 
 exportFeatureProportions <- function(connection,

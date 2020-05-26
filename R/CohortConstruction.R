@@ -629,16 +629,6 @@ copyAndCensorCohorts <- function(connection,
                                            target_strata_xref_table_create = tsXrefTempTableSql$create,
                                            target_strata_xref_table_drop = tsXrefTempTableSql$drop)
   
-  cohortId <- 500 # Represents the range of feature cohorts used in this process
-  recordKeepingFile <- "CopyAndCensor.csv"
-  if (!incremental || isTaskRequired(cohortId = cohortId,
-                                     checksum = computeChecksum(sql),
-                                     recordKeepingFile = recordKeepingFile)) {
-    
-    ParallelLogger::logInfo("Copy and censor cohorts to main analysis table")
-    DatabaseConnector::executeSql(connection, sql)
-    if (incremental) {
-      recordTasksDone(cohortId = cohortId, checksum = computeChecksum(sql), recordKeepingFile = recordKeepingFile)
-    }
-  }
+  ParallelLogger::logInfo("Copy and censor cohorts to main analysis table")
+  DatabaseConnector::executeSql(connection, sql)
 }
