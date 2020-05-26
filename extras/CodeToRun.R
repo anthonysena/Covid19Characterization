@@ -165,7 +165,7 @@ runStudy(connectionDetails = connectionDetails,
          databaseDescription = databaseDescription,
          #cohortGroups = c("covid", "influenza"),
          incremental = TRUE,
-         minCellCount = 5) 
+         minCellCount = minCellCount) 
 
 #CohortDiagnostics::preMergeDiagnosticsFiles(outputFolder)
 #CohortDiagnostics::launchDiagnosticsExplorer(outputFolder)
