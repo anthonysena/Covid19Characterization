@@ -1,3 +1,4 @@
 name,atlasName,atlasId,cohortId
-Fever,Fever,11650,1000
-Cough,Cough,13962,1001
+Prevalent chronic kidney disease,[COVID ID102 v1] Prevalent chronic kidney disease,130,102
+Prevalent end stage renal disease,[COVID ID103 v1] Prevalent end stage renal disease,9,103
+Prevalent heart disease,[COVID ID104 v1] Prevalent heart disease,805,104

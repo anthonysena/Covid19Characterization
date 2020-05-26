@@ -27,10 +27,10 @@ pkgdown::build_site()
 
 
 # Insert cohort definitions from ATLAS into package -----------------------
-cohortGroups <- read.csv("inst/settings/CohortGroups.csv")
+cohortGroups <- read.csv("inst/settings/subset/CohortGroups.csv")
 for (i in 1:nrow(cohortGroups)) {
   ParallelLogger::logInfo("* Importing cohorts in group: ", cohortGroups$cohortGroup[i], " *")
-  ROhdsiWebApi::insertCohortDefinitionSetInPackage(fileName = file.path("inst", cohortGroups$fileName[i]),
+  ROhdsiWebApi::insertCohortDefinitionSetInPackage(fileName = file.path("inst/", cohortGroups$fileName[i]),
                                                    baseUrl = Sys.getenv("baseUrl"),
                                                    insertTableSql = TRUE,
                                                    insertCohortCreationR = FALSE,
@@ -41,19 +41,25 @@ unlink("inst/cohorts/InclusionRules.csv")
 
 # Create the list of combinations of T, TwS, TwoS for the combinations of strata ----------------------------
 colNames <- c("name", "cohortId") # Use this to subset to the columns of interest
+settingsPath <- "inst/settings/"
+useSubset <- as.logical(Sys.getenv("USE_SUBSET"))
+if (useSubset) {
+  settingsPath <- file.path(settingsPath, "subset/")
+}
 # Target cohorts
-covidCohorts <- read.csv("inst/settings/CohortsToCreateCovid.csv")
-influenzaCohorts <- read.csv("inst/settings/CohortsToCreateInfluenza.csv")
+covidCohorts <- read.csv(file.path(settingsPath, "CohortsToCreateCovid.csv"))
+influenzaCohorts <- read.csv(file.path(settingsPath, "CohortsToCreateInfluenza.csv"))
+bulkStrata <- read.csv(file.path(settingsPath, "BulkStrata.csv"))
+atlasCohortStrata <- read.csv(file.path(settingsPath, "CohortsToCreateStrata.csv"))
+
 targetCohorts <- rbind(covidCohorts, influenzaCohorts)
 targetCohorts <- targetCohorts[, match(colNames, names(targetCohorts))]
 names(targetCohorts) <- c("targetName", "targetId")
 # Strata cohorts
 bulkStrataColNames <- c("inverseName", "name", "cohortId") # Use this to subset to the columns of interest
-bulkStrata <- read.csv("inst/settings/BulkStrata.csv")
 bulkStrata <- bulkStrata[, match(bulkStrataColNames, names(bulkStrata))]
 bulkStrata$name <- paste("with", bulkStrata$name)
 bulkStrata$inverseName <- paste("with", bulkStrata$inverseName)
-atlasCohortStrata <- read.csv("inst/settings/CohortsToCreateStrata.csv")
 atlasCohortStrata <- atlasCohortStrata[, match(colNames, names(atlasCohortStrata))]
 atlasCohortStrata$inverseName <- paste0("without ", atlasCohortStrata$name) 
 atlasCohortStrata$name <- paste0("with ", atlasCohortStrata$name) 

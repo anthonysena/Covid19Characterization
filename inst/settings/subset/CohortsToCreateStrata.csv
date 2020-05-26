@@ -1,3 +1,3 @@
 name,atlasName,atlasId,cohortId
-Type 2 Diabetes Mellitus,Type 2 Diabetes Mellitus,14819,200
-Hypertension,Hypertension,14820,201
+Prevalent Type 2 Diabetes Mellitus,[COVID ID100 v1] Prevalent Type 2 Diabetes Mellitus,910,100
+Prevalent hypertension,[COVID ID101 v1] Prevalent hypertension,140,101
