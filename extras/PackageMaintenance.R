@@ -27,7 +27,7 @@ pkgdown::build_site()
 
 
 # Insert cohort definitions from ATLAS into package -----------------------
-cohortGroups <- read.csv("inst/settings/subset/CohortGroups.csv")
+cohortGroups <- read.csv("inst/settings/CohortGroups.csv")
 for (i in 1:nrow(cohortGroups)) {
   ParallelLogger::logInfo("* Importing cohorts in group: ", cohortGroups$cohortGroup[i], " *")
   ROhdsiWebApi::insertCohortDefinitionSetInPackage(fileName = file.path("inst/", cohortGroups$fileName[i]),
