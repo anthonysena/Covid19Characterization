@@ -272,19 +272,21 @@ runStudy <- function(connectionDetails = NULL,
                                       incremental = incremental,
                                       recordKeepingFile = recordKeepingFile)
     if (nrow(subset) > 0) {
-      data <- lapply(split(subset, subset$cohortId), runCohortCharacterization, covariateSettings = covariateSettings, windowId = windowId)
-      data <- do.call(rbind, data)
-      covariates <- formatCovariates(data)
-      writeToCsv(covariates, file.path(exportFolder, "covariate.csv"), incremental = incremental, covariateId = covariates$covariateId)
-      data <- formatCovariateValues(data, counts, minCellCount)
-      writeToCsv(data, file.path(exportFolder, "covariate_value.csv"), incremental = incremental, cohortId = subset$cohortId)
-      recordTasksDone(cohortId = subset$cohortId,
-                      task = task,
-                      checksum = subset$checksum,
-                      recordKeepingFile = recordKeepingFile,
-                      incremental = incremental)
+      for (j in 1:length(subset)) {
+        #data <- lapply(split(subset, subset$cohortId), runCohortCharacterization, covariateSettings = covariateSettings, windowId = windowId)
+        #data <- do.call(rbind, data)
+        data <- runCohortCharacterization(row = subset[j], covariateSettings = covariateSettings, windowId = windowId)
+        covariates <- formatCovariates(data)
+        writeToCsv(covariates, file.path(exportFolder, "covariate.csv"), incremental = incremental, covariateId = covariates$covariateId)
+        data <- formatCovariateValues(data, counts, minCellCount)
+        writeToCsv(data, file.path(exportFolder, "covariate_value.csv"), incremental = incremental, cohortId = subset$cohortId)
+        recordTasksDone(cohortId = subset$cohortId,
+                        task = task,
+                        checksum = subset$checksum,
+                        recordKeepingFile = recordKeepingFile,
+                        incremental = incremental)
+      }
     }
-    
   }
 
   # Add all to zip file -------------------------------------------------------------------------------

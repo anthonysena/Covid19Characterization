@@ -148,6 +148,16 @@
     "ObservationWindow": [0, 0],
     "PrimaryCriteriaLimit": ["All"]
   },
+  "AdditionalCriteria": {
+    "Type": ["ALL"],
+    "CriteriaList": [],
+    "DemographicCriteriaList": [
+      {
+        "OccurrenceStartDate": ["2016-09-01", "bt", "2020-12-31"]
+      }
+    ],
+    "Groups": []
+  },
   "ConceptSets": [
     {
       "id": [1],
@@ -2382,7 +2392,7 @@
       }
     }
   ],
-  "QualifiedLimit": ["First"],
+  "QualifiedLimit": ["All"],
   "ExpressionLimit": ["All"],
   "InclusionRules": [],
   "EndStrategy": {

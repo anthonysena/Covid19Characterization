@@ -445,23 +445,23 @@ instantiateCohortSet <- function(connectionDetails = NULL,
   }
   if (createCohortTable) {
     needToCreate <- TRUE
-     if (incremental) {
-        tables <- DatabaseConnector::getTableNames(connection, cohortDatabaseSchema)
-        if (toupper(cohortTable) %in% toupper(tables)) {
-          ParallelLogger::logInfo("Cohort table already exists and in incremental mode, so not recreating table.")
-          needToCreate <- FALSE
-        }
-     }
+    if (incremental) {
+      tables <- DatabaseConnector::getTableNames(connection, cohortDatabaseSchema)
+      if (toupper(cohortTable) %in% toupper(tables)) {
+        ParallelLogger::logInfo("Cohort table already exists and in incremental mode, so not recreating table.")
+        needToCreate <- FALSE
+      }
+    }
     if (needToCreate) {
-       createCohortTable(connection = connection,
-                         cohortDatabaseSchema = cohortDatabaseSchema,
-                         cohortTable = cohortTable,
-                         createInclusionStatsTables = FALSE)
+      createCohortTable(connection = connection,
+                        cohortDatabaseSchema = cohortDatabaseSchema,
+                        cohortTable = cohortTable,
+                        createInclusionStatsTables = FALSE)
     }
   }
   
   cohorts <- loadCohortsFromPackage(cohortIds = cohortIds)
-
+  
   if (incremental) {
     cohorts$checksum <- computeChecksum(cohorts$sql)
     recordKeepingFile <- file.path(incrementalFolder, "InstantiatedCohorts.csv")
@@ -470,7 +470,7 @@ instantiateCohortSet <- function(connectionDetails = NULL,
   if (generateInclusionStats) {
     createTempInclusionStatsTables(connection, oracleTempSchema, cohorts) 
   }
- 
+  
   instantiatedCohortIds <- c() 
   for (i in 1:nrow(cohorts)) {
     if (!incremental || isTaskRequired(cohortId = cohorts$cohortId[i],
@@ -478,7 +478,7 @@ instantiateCohortSet <- function(connectionDetails = NULL,
                                        recordKeepingFile = recordKeepingFile)) {
       ParallelLogger::logInfo("Instantiation cohort ", cohorts$cohortFullName[i])
       sql <- cohorts$sql[i]
-
+      
       if (generateInclusionStats) {
         sql <- SqlRender::render(sql,
                                  cdm_database_schema = cdmDatabaseSchema,
@@ -503,6 +503,9 @@ instantiateCohortSet <- function(connectionDetails = NULL,
                                   oracleTempSchema = oracleTempSchema)
       DatabaseConnector::executeSql(connection, sql)
       instantiatedCohortIds <- c(instantiatedCohortIds, cohorts$cohortId[i])
+      if (incremental) {
+        recordTasksDone(cohortId = cohorts$cohortId[i], checksum = cohorts$checksum[i], recordKeepingFile = recordKeepingFile)
+      }
     }
   }
   
@@ -512,9 +515,6 @@ instantiateCohortSet <- function(connectionDetails = NULL,
                                         inclusionStatisticsFolder = inclusionStatisticsFolder, 
                                         incremental = incremental, 
                                         cohortIds = instantiatedCohortIds)
-  }
-  if (incremental) {
-    recordTasksDone(cohortId = cohorts$cohortId, checksum = cohorts$checksum, recordKeepingFile = recordKeepingFile)
   }
   
   delta <- Sys.time() - start
