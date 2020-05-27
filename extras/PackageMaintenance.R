@@ -50,6 +50,18 @@ influenzaCohorts <- read.csv(file.path(settingsPath, "CohortsToCreateInfluenza.c
 bulkStrata <- read.csv(file.path(settingsPath, "BulkStrata.csv"))
 atlasCohortStrata <- read.csv(file.path(settingsPath, "CohortsToCreateStrata.csv"))
 
+
+# Ensure all of the IDs are unique
+allCohortIds <- c(covidCohorts[,match("cohortId", names(covidCohorts))], 
+                  influenzaCohorts[,match("cohortId", names(influenzaCohorts))],
+                  bulkStrata[,match("cohortId", names(bulkStrata))],
+                  atlasCohortStrata[,match("cohortId", names(atlasCohortStrata))])
+
+totalRows <- nrow(covidCohorts) + nrow(influenzaCohorts) + nrow(bulkStrata) + nrow(atlasCohortStrata)
+if (length(unique(allCohortIds)) != totalRows) {
+  warning("There are duplicate cohort IDs in the settings files!")
+}
+
 # Target cohorts
 colNames <- c("name", "cohortId") # Use this to subset to the columns of interest
 targetCohorts <- rbind(covidCohorts, influenzaCohorts)
